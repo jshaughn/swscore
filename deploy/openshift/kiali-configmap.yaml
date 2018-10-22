@@ -18,3 +18,10 @@ data:
     identity:
       cert_file: /kiali-cert/tls.crt
       private_key_file: /kiali-cert/tls.key
+    api:
+      namespaces:
+        exclude:
+        - default
+        - istio-operator
+        - kube.*
+        - openshift.*

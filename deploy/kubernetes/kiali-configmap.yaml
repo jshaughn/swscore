@@ -15,3 +15,9 @@ data:
         url: ${JAEGER_URL}
       grafana:
         url: ${GRAFANA_URL}
+    api_config:
+      namespaces:
+        exclude:
+        - default
+        - istio-operator
+        - kube.*

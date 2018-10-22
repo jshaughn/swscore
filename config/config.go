@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -126,6 +127,16 @@ type KubernetesConfig struct {
 	QPS   float32 `yaml:"qps,omitempty"`
 }
 
+// Exclude Blacklist holds regex strings defining a blacklist
+type ApiConfig struct {
+	Namespaces ApiNamespacesConfig
+}
+
+// Exclude Blacklist holds regex strings defining a blacklist
+type ApiNamespacesConfig struct {
+	Exclude []string
+}
+
 // Config defines full YAML configuration.
 type Config struct {
 	Identity         security.Identity `yaml:",omitempty"`
@@ -136,6 +147,7 @@ type Config struct {
 	IstioNamespace   string            `yaml:"istio_namespace,omitempty"`
 	IstioLabels      IstioLabels       `yaml:"istio_labels,omitempty"`
 	KubernetesConfig KubernetesConfig  `yaml:"kubernetes_config,omitempty"`
+	Api              ApiConfig         `yaml:"api,omitempty"`
 }
 
 // NewConfig creates a default Config struct
@@ -189,6 +201,17 @@ func NewConfig() (c *Config) {
 	// Kubernetes client Configuration
 	c.KubernetesConfig.Burst = getDefaultInt(EnvKubernetesBurst, 200)
 	c.KubernetesConfig.QPS = getDefaultFloat32(EnvKubernetesQPS, 100)
+
+	trimmedExclusionPatterns := []string{}
+	for _, entry := range c.Api.Namespaces.Exclude {
+		exclusionPattern := strings.TrimSpace(entry)
+		if _, err := regexp.Compile(exclusionPattern); err != nil {
+			log.Errorf("Invalid namespace exclude entry, [%s] is not a valid regex pattern: %v", exclusionPattern, err)
+		} else {
+			trimmedExclusionPatterns = append(trimmedExclusionPatterns, strings.TrimSpace(exclusionPattern))
+		}
+	}
+	c.Api.Namespaces.Exclude = trimmedExclusionPatterns
 
 	return
 }
