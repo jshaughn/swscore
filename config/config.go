@@ -25,6 +25,7 @@ const (
 	EnvIstioIdentityDomain    = "ISTIO_IDENTITY_DOMAIN"
 	EnvIstioSidecarAnnotation = "ISTIO_SIDECAR_ANNOTATION"
 	EnvIstioUrlServiceVersion = "ISTIO_URL_SERVICE_VERSION"
+	EnvApiNamespacesExclude   = "API_NAMESPACES_EXCLUDE"
 
 	EnvServerAddress                    = "SERVER_ADDRESS"
 	EnvServerPort                       = "SERVER_PORT"
@@ -160,6 +161,7 @@ func NewConfig() (c *Config) {
 	c.IstioNamespace = strings.TrimSpace(getDefaultString(EnvIstioNamespace, "istio-system"))
 	c.IstioLabels.AppLabelName = strings.TrimSpace(getDefaultString(EnvIstioLabelNameApp, "app"))
 	c.IstioLabels.VersionLabelName = strings.TrimSpace(getDefaultString(EnvIstioLabelNameVersion, "version"))
+	c.Api.Namespaces.Exclude = getDefaultStringArray(EnvApiNamespacesExclude, "default,istio-operator,kube.*,openshift.*")
 
 	// Server configuration
 	c.Server.Address = strings.TrimSpace(getDefaultString(EnvServerAddress, ""))
@@ -231,6 +233,15 @@ func getDefaultString(envvar string, defaultValue string) (retVal string) {
 	if retVal == "" {
 		retVal = defaultValue
 	}
+	return
+}
+
+func getDefaultStringArray(envvar string, defaultValue string) (retVal []string) {
+	csv := os.Getenv(envvar)
+	if csv == "" {
+		csv = defaultValue
+	}
+	retVal = strings.Split(csv, ",")
 	return
 }
 

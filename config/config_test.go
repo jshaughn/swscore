@@ -41,8 +41,16 @@ func TestDefaults(t *testing.T) {
 		t.Error("server CORS default setting is wrong")
 	}
 
-	if len(conf.Api.Namespaces.Exclude) != 0 {
+	if len(conf.Api.Namespaces.Exclude) != 4 {
 		t.Error("Api namespace exclude default setting is wrong")
+	} else {
+		// our default exclusion list: default,istio-operator,kube.*,openshift.*
+		if conf.Api.Namespaces.Exclude[0] != "default" ||
+			conf.Api.Namespaces.Exclude[1] != "istio-operator" ||
+			conf.Api.Namespaces.Exclude[2] != "kube.*" ||
+			conf.Api.Namespaces.Exclude[3] != "openshift.*" {
+			t.Errorf("Api namespace exclude default list is wrong: %+v", conf.Api.Namespaces.Exclude)
+		}
 	}
 }
 

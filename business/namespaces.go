@@ -49,15 +49,19 @@ func (in *NamespaceService) GetNamespaces() ([]models.Namespace, error) {
 		namespaces = models.CastNamespaceCollection(services)
 	}
 
-	result := []models.Namespace{}
-NAMESPACES:
-	for _, namespace := range namespaces {
-		for _, excludePattern := range config.Get().Api.Namespaces.Exclude {
-			if match, _ := regexp.MatchString(excludePattern, namespace.Name); match {
-				continue NAMESPACES
+	result := namespaces
+	excludes := config.Get().Api.Namespaces.Exclude
+	if len(excludes) > 0 {
+		result = []models.Namespace{}
+	NAMESPACES:
+		for _, namespace := range namespaces {
+			for _, excludePattern := range excludes {
+				if match, _ := regexp.MatchString(excludePattern, namespace.Name); match {
+					continue NAMESPACES
+				}
 			}
+			result = append(result, namespace)
 		}
-		result = append(result, namespace)
 	}
 
 	return result, nil
