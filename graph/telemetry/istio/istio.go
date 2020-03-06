@@ -250,7 +250,7 @@ func populateTrafficMap(trafficMap graph.TrafficMap, vector *model.Vector, o gra
 		// don't inject a service node if destSvcName is not set or the dest node is already a service node.
 		inject := false
 		if o.InjectServiceNodes && graph.IsOK(destSvcName) {
-			_, destNodeType := graph.Id(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o.GraphType)
+			_, destNodeType := graph.ID(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o.GraphType)
 			inject = (graph.NodeTypeService != destNodeType)
 		}
 		if inject {
@@ -363,7 +363,7 @@ func populateTrafficMapTCP(trafficMap graph.TrafficMap, vector *model.Vector, o 
 		// don't inject a service node if destSvcName is not set or the dest node is already a service node.
 		inject := false
 		if o.InjectServiceNodes && graph.IsOK(destSvcName) {
-			_, destNodeType := graph.Id(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o.GraphType)
+			_, destNodeType := graph.ID(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o.GraphType)
 			inject = (graph.NodeTypeService != destNodeType)
 		}
 		if inject {
@@ -443,8 +443,8 @@ func handleMisconfiguredLabels(node *graph.Node, app, version string, rate float
 	}
 }
 
-func addNode(trafficMap graph.TrafficMap, serviceNs, service, workloadNs, workload, app, version string, o graph.TelemetryOptions) (*graph.Node, bool) {
-	id, nodeType := graph.Id(serviceNs, service, workloadNs, workload, app, version, o.GraphType)
+func addNode(trafficMap graph.TrafficMap, serviceNs, service, workloadNs, workload, app, version string, isRequestedService bool, o graph.TelemetryOptions) (*graph.Node, bool) {
+	id, nodeType := graph.ID(serviceNs, service, isRequestedService, workloadNs, workload, app, version, o.GraphType)
 	node, found := trafficMap[id]
 	if !found {
 		namespace := workloadNs
@@ -453,6 +453,9 @@ func addNode(trafficMap graph.TrafficMap, serviceNs, service, workloadNs, worklo
 		}
 		newNode := graph.NewNodeExplicit(id, namespace, workload, app, version, service, nodeType, o.GraphType)
 		node = &newNode
+		if nodeType == graph.NodeTypeService && isRequestedService {
+			node.Metadata["isRequestedService"] = true
+		}
 		trafficMap[id] = node
 	}
 	return node, found

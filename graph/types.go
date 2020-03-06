@@ -81,18 +81,18 @@ func (s *ServiceName) Key() string {
 type TrafficMap map[string]*Node
 
 // NewNode allocates a new Node object for the given telemetry
-func NewNode(serviceNamespace, service string, isRequestedService bool, workloadNamespace, workload, app, version, graphType string) Node {
-	id, nodeType := ID(serviceNamespace, service, workloadNamespace, workload, app, version, graphType)
+func NewNode(serviceNamespace, serviceName string, isRequestedService bool, workloadNamespace, workload, app, version, graphType string) Node {
+	id, nodeType := ID(serviceNamespace, serviceName, isRequestedService, workloadNamespace, workload, app, version, graphType)
 	namespace := workloadNamespace
 	if !IsOK(namespace) {
 		namespace = serviceNamespace
 	}
 
-	return NewNodeExplicit(id, namespace, workload, app, version, service, nodeType, graphType)
+	return NewNodeExplicit(id, namespace, workload, app, version, serviceName, nodeType, graphType)
 }
 
 // NewNodeExplicit allocates a new Node object using the provided ID and nodeType
-func NewNodeExplicit(id, namespace, workload, app, version, service, nodeType, graphType string) Node {
+func NewNodeExplicit(id, namespace, workload, app, version, serviceName, nodeType, graphType string) Node {
 	metadata := make(Metadata)
 
 	// trim unnecessary fields
@@ -106,7 +106,7 @@ func NewNodeExplicit(id, namespace, workload, app, version, service, nodeType, g
 		if version == Unknown {
 			version = ""
 		}
-		service = ""
+		serviceName = ""
 	case NodeTypeApp:
 		// note: we keep workload for a versioned app node because app+version labeling
 		// should be backed by a single workload and it can be useful to use the workload
@@ -115,13 +115,13 @@ func NewNodeExplicit(id, namespace, workload, app, version, service, nodeType, g
 			workload = ""
 			version = ""
 		}
-		service = ""
+		serviceName = ""
 	case NodeTypeService:
 		app = ""
 		workload = ""
 		version = ""
 
-		if service == passthroughCluster || service == blackHoleCluster {
+		if serviceName == passthroughCluster || serviceName == blackHoleCluster {
 			metadata[IsEgressCluster] = true
 		}
 	}
@@ -133,7 +133,7 @@ func NewNodeExplicit(id, namespace, workload, app, version, service, nodeType, g
 		Workload:  workload,
 		App:       app,
 		Version:   version,
-		Service:   service,
+		Service:   serviceName,
 		Edges:     []*Edge{},
 		Metadata:  metadata,
 	}
@@ -161,7 +161,7 @@ func NewTrafficMap() TrafficMap {
 }
 
 // ID returns the ID and nodetype given the telemetry label information
-func ID(serviceNamespace, service, workloadNamespace, workload, app, version, graphType string) (id, nodeType string) {
+func ID(serviceNamespace, service string, isRequestedService bool, workloadNamespace, workload, app, version, graphType string) (id, nodeType string) {
 	// prefer the workload namespace
 	namespace := workloadNamespace
 	if !IsOK(namespace) {
@@ -189,6 +189,10 @@ func ID(serviceNamespace, service, workloadNamespace, workload, app, version, gr
 		panic(fmt.Sprintf("Failed ID gen: namespace=[%s] workload=[%s] app=[%s] version=[%s] service=[%s] graphType=[%s]", namespace, workload, app, version, service, graphType))
 	}
 
+	svcPrefix := "svc"
+	if isRequestedService {
+		svcPrefix = "requested_svc"
+	}
 	// handle workload graph nodes (service graphs are initially processed as workload graphs)
 	if graphType == GraphTypeWorkload || graphType == GraphTypeService {
 		// workload graph nodes are type workload or service
@@ -196,7 +200,7 @@ func ID(serviceNamespace, service, workloadNamespace, workload, app, version, gr
 			panic(fmt.Sprintf("Failed ID gen: namespace=[%s] workload=[%s] app=[%s] version=[%s] service=[%s] graphType=[%s]", namespace, workload, app, version, service, graphType))
 		}
 		if !workloadOk {
-			return fmt.Sprintf("svc_%v_%v", namespace, service), NodeTypeService
+			return fmt.Sprintf("%s_%v_%v", svcPrefix, namespace, service), NodeTypeService
 		}
 		return fmt.Sprintf("wl_%v_%v", namespace, workload), NodeTypeWorkload
 	}
@@ -227,5 +231,5 @@ func ID(serviceNamespace, service, workloadNamespace, workload, app, version, gr
 	}
 
 	// fall back to service as a last resort in the app graph
-	return fmt.Sprintf("svc_%v_%v", namespace, service), NodeTypeService
+	return fmt.Sprintf("%s_%v_%v", svcPrefix, namespace, service), NodeTypeService
 }
