@@ -201,6 +201,9 @@ func populateTrafficMap(trafficMap graph.TrafficMap, vector *model.Vector, o gra
 		lSourceWl, sourceWlOk := m["source_workload"]
 		lSourceApp, sourceAppOk := m[model.LabelName("source_"+appLabel)]
 		lSourceVer, sourceVerOk := m[model.LabelName("source_"+verLabel)]
+		// lReqSvcNs, reqSvcNsOk := m["requested_service_namespace"]
+		// lReqSvc, reqSvcOk := m["requested_service"]
+		// lReqSvcName, reqSvcNameOk := m["requested_service_name"]
 		lDestSvcNs, destSvcNsOk := m["destination_service_namespace"]
 		lDestSvc, destSvcOk := m["destination_service"]
 		lDestSvcName, destSvcNameOk := m["destination_service_name"]
@@ -222,7 +225,9 @@ func populateTrafficMap(trafficMap graph.TrafficMap, vector *model.Vector, o gra
 		sourceWl := string(lSourceWl)
 		sourceApp := string(lSourceApp)
 		sourceVer := string(lSourceVer)
-		destSvc := string(lDestSvc)
+		reqSvcNs := string(lDestSvcNs) // string(lReqSvcNs)
+		// reqSvc := string(lDestSvc)         // string(lReqSvc)
+		reqSvcName := string(lDestSvcName) // string(lReqSvcName)
 		destWlNs := string(lDestWlNs)
 		destWl := string(lDestWl)
 		destApp := string(lDestApp)
@@ -249,17 +254,44 @@ func populateTrafficMap(trafficMap graph.TrafficMap, vector *model.Vector, o gra
 			inject = (graph.NodeTypeService != destNodeType)
 		}
 		if inject {
-			addTraffic(trafficMap, val, protocol, code, flags, host, sourceWlNs, "", sourceWl, sourceApp, sourceVer, destSvcNs, destSvcName, "", "", "", "", o)
-			addTraffic(trafficMap, val, protocol, code, flags, host, destSvcNs, destSvcName, "", "", "", destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o)
+			// insert requested service node if provided
+			if true { // reqSvcNameOk {
+				sourceNode, sourceFound := addNode(trafficMap, sourceWlNs, "", sourceWl, sourceApp, sourceVer, false, o)
+				requestedNode, requestedFound := addNode(trafficMap, reqSvcNs, reqSvcName, "", "", "", true, o)
+				injectedNode, injectedFound := addNode(trafficMap, destSvcNs, destSvcName, "", "", "", false, o)
+				destNode, destFound := addNode(trafficMap, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, false, o)
+
+				addTraffic(trafficMap, val, protocol, code, flags, host, sourceNode, sourceFound, requestedNode, requestedFound, o)
+				addTraffic(trafficMap, val, protocol, code, flags, host, requestedNode, requestedFound, injectedNode, injectedFound, o)
+				addTraffic(trafficMap, val, protocol, code, flags, host, injectedNode, injectedFound, destNode, destFound, o)
+			} else {
+				sourceNode, sourceFound := addNode(trafficMap, sourceWlNs, "", sourceWl, sourceApp, sourceVer, false, o)
+				injectedNode, injectedFound := addNode(trafficMap, destSvcNs, destSvcName, "", "", "", false, o)
+				destNode, destFound := addNode(trafficMap, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, false, o)
+
+				addTraffic(trafficMap, val, protocol, code, flags, host, sourceNode, sourceFound, injectedNode, injectedFound, o)
+				addTraffic(trafficMap, val, protocol, code, flags, host, injectedNode, injectedFound, destNode, destFound, o)
+			}
 		} else {
-			addTraffic(trafficMap, val, protocol, code, flags, host, sourceWlNs, "", sourceWl, sourceApp, sourceVer, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o)
+			// if provided insert the request service node
+			if true { // reqSvcNameOk {
+				sourceNode, sourceFound := addNode(trafficMap, sourceWlNs, "", sourceWl, sourceApp, sourceVer, false, o)
+				requestedNode, requestedFound := addNode(trafficMap, reqSvcNs, reqSvcName, "", "", "", true, o)
+				destNode, destFound := addNode(trafficMap, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, false, o)
+
+				addTraffic(trafficMap, val, protocol, code, flags, host, sourceNode, sourceFound, requestedNode, requestedFound, o)
+				addTraffic(trafficMap, val, protocol, code, flags, host, requestedNode, requestedFound, destNode, destFound, o)
+			} else {
+				sourceNode, sourceFound := addNode(trafficMap, sourceWlNs, "", sourceWl, sourceApp, sourceVer, false, o)
+				destNode, destFound := addNode(trafficMap, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, false, o)
+
+				addTraffic(trafficMap, val, protocol, code, flags, host, sourceNode, sourceFound, destNode, destFound, o)
+			}
 		}
 	}
 }
 
-func addTraffic(trafficMap graph.TrafficMap, val float64, protocol, code, flags, host, sourceNs, sourceSvc, sourceWl, sourceApp, sourceVer, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer string, o graph.TelemetryOptions) (source, dest *graph.Node) {
-	source, sourceFound := addNode(trafficMap, sourceNs, sourceSvc, sourceNs, sourceWl, sourceApp, sourceVer, o)
-	dest, destFound := addNode(trafficMap, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o)
+func addTraffic(trafficMap graph.TrafficMap, val float64, protocol, code, flags, host string, source *graph.Node, sourceFound bool, dest *graph.Node, destFound boolNs, o graph.TelemetryOptions) (source, dest *graph.Node) {
 
 	addToDestServices(dest.Metadata, destSvcNs, destSvcName)
 
@@ -275,7 +307,7 @@ func addTraffic(trafficMap graph.TrafficMap, val float64, protocol, code, flags,
 		edge.Metadata[graph.ProtocolKey] = protocol
 	}
 
-	// A workload may mistakenly have multiple app and or version label values.
+	// A workload may mistakenly have multiple app and/or version label values.
 	// This is a misconfiguration we need to handle. See Kiali-1309.
 	if sourceFound {
 		handleMisconfiguredLabels(source, sourceApp, sourceVer, val, o)

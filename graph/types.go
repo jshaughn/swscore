@@ -80,8 +80,9 @@ func (s *ServiceName) Key() string {
 // namespace.
 type TrafficMap map[string]*Node
 
-func NewNode(serviceNamespace, service, workloadNamespace, workload, app, version, graphType string) Node {
-	id, nodeType := Id(serviceNamespace, service, workloadNamespace, workload, app, version, graphType)
+// NewNode allocates a new Node object for the given telemetry
+func NewNode(serviceNamespace, service string, isRequestedService bool, workloadNamespace, workload, app, version, graphType string) Node {
+	id, nodeType := ID(serviceNamespace, service, workloadNamespace, workload, app, version, graphType)
 	namespace := workloadNamespace
 	if !IsOK(namespace) {
 		namespace = serviceNamespace
@@ -90,6 +91,7 @@ func NewNode(serviceNamespace, service, workloadNamespace, workload, app, versio
 	return NewNodeExplicit(id, namespace, workload, app, version, service, nodeType, graphType)
 }
 
+// NewNodeExplicit allocates a new Node object using the provided ID and nodeType
 func NewNodeExplicit(id, namespace, workload, app, version, service, nodeType, graphType string) Node {
 	metadata := make(Metadata)
 
@@ -137,12 +139,14 @@ func NewNodeExplicit(id, namespace, workload, app, version, service, nodeType, g
 	}
 }
 
+// AddEdge allocates and adds a new Edge node to the Node
 func (s *Node) AddEdge(dest *Node) *Edge {
 	e := NewEdge(s, dest)
 	s.Edges = append(s.Edges, &e)
 	return &e
 }
 
+// NewEdge allocates a new Edge node
 func NewEdge(source, dest *Node) Edge {
 	return Edge{
 		Source:   source,
@@ -151,11 +155,13 @@ func NewEdge(source, dest *Node) Edge {
 	}
 }
 
+// NewTrafficMap allocates a new TrafficMap
 func NewTrafficMap() TrafficMap {
 	return make(map[string]*Node)
 }
 
-func Id(serviceNamespace, service, workloadNamespace, workload, app, version, graphType string) (id, nodeType string) {
+// ID returns the ID and nodetype given the telemetry label information
+func ID(serviceNamespace, service, workloadNamespace, workload, app, version, graphType string) (id, nodeType string) {
 	// prefer the workload namespace
 	namespace := workloadNamespace
 	if !IsOK(namespace) {
@@ -164,7 +170,7 @@ func Id(serviceNamespace, service, workloadNamespace, workload, app, version, gr
 
 	// first, check for the special-case "unknown" source node
 	if Unknown == namespace && Unknown == workload && Unknown == app && service == "" {
-		return fmt.Sprintf("unknown_source"), NodeTypeUnknown
+		return fmt.Sprint("unknown_source"), NodeTypeUnknown
 	}
 
 	// It is possible that a request is made for an unknown destination. For example, an Ingress
