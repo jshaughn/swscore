@@ -241,7 +241,7 @@ func (a ResponseTimeAppender) populateResponseTimeMap(responseTimeMap map[string
 		// don't inject a service node if destSvcName is not set or the dest node is already a service node.
 		inject := false
 		if a.InjectServiceNodes && graph.IsOK(destSvcName) {
-			_, destNodeType := graph.ID(destSvcNs, destSvcName, false, destWlNs, destWl, destApp, destVer, a.GraphType)
+			_, destNodeType := graph.NodeID(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, a.GraphType)
 			inject = (graph.NodeTypeService != destNodeType)
 		}
 		if inject {
@@ -254,8 +254,8 @@ func (a ResponseTimeAppender) populateResponseTimeMap(responseTimeMap map[string
 }
 
 func (a ResponseTimeAppender) addResponseTime(responseTimeMap map[string]float64, val float64, sourceNs, sourceSvcName, sourceWl, sourceApp, sourceVer, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer string) {
-	sourceID, _ := graph.ID(sourceNs, sourceSvcName, false, sourceNs, sourceWl, sourceApp, sourceVer, a.GraphType)
-	destID, _ := graph.ID(destSvcNs, destSvcName, false, destWlNs, destWl, destApp, destVer, a.GraphType)
+	sourceID, _ := graph.NodeID(sourceNs, sourceSvcName, sourceNs, sourceWl, sourceApp, sourceVer, a.GraphType)
+	destID, _ := graph.NodeID(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, a.GraphType)
 	key := fmt.Sprintf("%s %s", sourceID, destID)
 
 	responseTimeMap[key] = val

@@ -81,8 +81,8 @@ func (s *ServiceName) Key() string {
 type TrafficMap map[string]*Node
 
 // NewNode allocates a new Node object for the given telemetry
-func NewNode(serviceNamespace, serviceName string, isRequestedService bool, workloadNamespace, workload, app, version, graphType string) Node {
-	id, nodeType := ID(serviceNamespace, serviceName, isRequestedService, workloadNamespace, workload, app, version, graphType)
+func NewNode(serviceNamespace, serviceName string, workloadNamespace, workload, app, version, graphType string) Node {
+	id, nodeType := NodeID(serviceNamespace, serviceName, workloadNamespace, workload, app, version, graphType)
 	namespace := workloadNamespace
 	if !IsOK(namespace) {
 		namespace = serviceNamespace
@@ -160,8 +160,22 @@ func NewTrafficMap() TrafficMap {
 	return make(map[string]*Node)
 }
 
-// ID returns the ID and nodetype given the telemetry label information
-func ID(serviceNamespace, service string, isRequestedService bool, workloadNamespace, workload, app, version, graphType string) (id, nodeType string) {
+// NodeID generates the ID and NodeType given the telemetry
+func NodeID(serviceNamespace, service string, workloadNamespace, workload, app, version, graphType string) (id, nodeType string) {
+	return nodeID(serviceNamespace, service, false, workloadNamespace, workload, app, version, graphType)
+}
+
+// InjectedServiceNodeID generates the ID and NodeType given the injected Service telemetry. NodeType will always be NodeType.Service
+func InjectedServiceNodeID(serviceNamespace, service, graphType string) (id, nodeType string) {
+	return nodeID(serviceNamespace, service, false, "", "", "", "", graphType)
+}
+
+// RequestedServiceNodeID generates the ID and NodeType given the requestedService telemetry. NodeType will always be NodeType.Service
+func RequestedServiceNodeID(serviceNamespace, service, graphType string) (id, nodeType string) {
+	return nodeID(serviceNamespace, service, true, "", "", "", "", graphType)
+}
+
+func nodeID(serviceNamespace, service string, isRequestedService bool, workloadNamespace, workload, app, version, graphType string) (id, nodeType string) {
 	// prefer the workload namespace
 	namespace := workloadNamespace
 	if !IsOK(namespace) {

@@ -64,8 +64,8 @@ type NodeData struct {
 	Workload        string              `json:"workload,omitempty"`
 	App             string              `json:"app,omitempty"`
 	Version         string              `json:"version,omitempty"`
-	Service         string              `json:"service,omitempty"`         // requested service for NodeTypeService
-	DestServices    []graph.ServiceName `json:"destServices,omitempty"`    // requested services for [dest] node
+	Service         string              `json:"service,omitempty"`         // service name for NodeTypeService
+	DestServices    []graph.ServiceName `json:"destServices,omitempty"`    // services for [dest] node
 	Traffic         []ProtocolTraffic   `json:"traffic,omitempty"`         // traffic rates for all detected protocols
 	HasCB           bool                `json:"hasCB,omitempty"`           // true (has circuit breaker) | false
 	HasMissingSC    bool                `json:"hasMissingSC,omitempty"`    // true (has missing sidecar) | false

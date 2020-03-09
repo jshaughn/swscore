@@ -141,7 +141,7 @@ func (a SecurityPolicyAppender) populateSecurityPolicyMap(securityPolicyMap map[
 		// don't inject a service node if destSvcName is not set or the dest node is already a service node.
 		inject := false
 		if a.InjectServiceNodes && graph.IsOK(destSvcName) {
-			_, destNodeType := graph.ID(destSvcNs, destSvcName, false, destWlNs, destWl, destApp, destVer, a.GraphType)
+			_, destNodeType := graph.NodeID(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, a.GraphType)
 			inject = (graph.NodeTypeService != destNodeType)
 		}
 		if inject {
@@ -154,8 +154,8 @@ func (a SecurityPolicyAppender) populateSecurityPolicyMap(securityPolicyMap map[
 }
 
 func (a SecurityPolicyAppender) addSecurityPolicy(securityPolicyMap map[string]PolicyRates, csp string, val float64, sourceNs, sourceSvcName, sourceWl, sourceApp, sourceVer, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer string) {
-	sourceId, _ := graph.ID(sourceNs, sourceSvcName, false, sourceNs, sourceWl, sourceApp, sourceVer, a.GraphType)
-	destId, _ := graph.ID(destSvcNs, destSvcName, false, destWlNs, destWl, destApp, destVer, a.GraphType)
+	sourceId, _ := graph.NodeID(sourceNs, sourceSvcName, sourceNs, sourceWl, sourceApp, sourceVer, a.GraphType)
+	destId, _ := graph.NodeID(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, a.GraphType)
 	key := fmt.Sprintf("%s %s", sourceId, destId)
 	var policyRates PolicyRates
 	var ok bool

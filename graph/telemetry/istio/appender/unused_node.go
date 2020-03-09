@@ -66,7 +66,7 @@ func (a UnusedNodeAppender) buildUnusedTrafficMap(trafficMap graph.TrafficMap, n
 	unusedTrafficMap := graph.NewTrafficMap()
 
 	for _, s := range services {
-		id, nodeType := graph.ID(namespace, s.Service.Name, false, "", "", "", "", a.GraphType)
+		id, nodeType := graph.NodeID(namespace, s.Service.Name, "", "", "", "", a.GraphType)
 		if _, found := trafficMap[id]; !found {
 			if _, found = unusedTrafficMap[id]; !found {
 				log.Tracef("Adding unused node for service [%s]", s.Service.Name)
@@ -91,7 +91,7 @@ func (a UnusedNodeAppender) buildUnusedTrafficMap(trafficMap graph.TrafficMap, n
 		if v, ok := labels[versionLabel]; ok {
 			version = v
 		}
-		id, nodeType := graph.ID("", "", false, namespace, w.Name, app, version, a.GraphType)
+		id, nodeType := graph.NodeID("", "", namespace, w.Name, app, version, a.GraphType)
 		if _, found := trafficMap[id]; !found {
 			if _, found = unusedTrafficMap[id]; !found {
 				log.Tracef("Adding unused node for workload [%s] with labels [%v]", w.Name, labels)
