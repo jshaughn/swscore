@@ -23,6 +23,7 @@ const (
 	IsMisconfigured MetadataKey = "isMisconfigured"
 	IsMTLS          MetadataKey = "isMTLS"
 	IsOutside       MetadataKey = "isOutside"
+	IsRequested     MetadataKey = "isRequested" // Requested service (i.e. virtual service routing node)
 	IsRoot          MetadataKey = "isRoot"
 	IsServiceEntry  MetadataKey = "isServiceEntry"
 	IsUnused        MetadataKey = "isUnused"

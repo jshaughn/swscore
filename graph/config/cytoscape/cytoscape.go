@@ -75,6 +75,7 @@ type NodeData struct {
 	IsInaccessible  bool                `json:"isInaccessible,omitempty"`  // true if the node exists in an inaccessible namespace
 	IsMisconfigured string              `json:"isMisconfigured,omitempty"` // set to misconfiguration list, current values: [ 'labels' ]
 	IsOutside       bool                `json:"isOutside,omitempty"`       // true | false
+	IsRequested     bool                `json:"isRequested,omitempty"`     // true | false
 	IsRoot          bool                `json:"isRoot,omitempty"`          // true | false
 	IsServiceEntry  string              `json:"isServiceEntry,omitempty"`  // set to the location, current values: [ 'MESH_EXTERNAL', 'MESH_INTERNAL' ]
 	IsUnused        bool                `json:"isUnused,omitempty"`        // true | false
@@ -201,6 +202,16 @@ func buildConfig(trafficMap graph.TrafficMap, nodes *[]*NodeWrapper, edges *[]*E
 			nd.IsDead = val.(bool)
 		}
 
+		// node is not accessible to the current user
+		if val, ok := n.Metadata[graph.IsInaccessible]; ok {
+			nd.IsInaccessible = val.(bool)
+		}
+
+		// node may be a root
+		if val, ok := n.Metadata[graph.IsRequested]; ok {
+			nd.IsRequested = val.(bool)
+		}
+
 		// node may be a root
 		if val, ok := n.Metadata[graph.IsRoot]; ok {
 			nd.IsRoot = val.(bool)
@@ -209,11 +220,6 @@ func buildConfig(trafficMap graph.TrafficMap, nodes *[]*NodeWrapper, edges *[]*E
 		// node may be unused
 		if val, ok := n.Metadata[graph.IsUnused]; ok {
 			nd.IsUnused = val.(bool)
-		}
-
-		// node is not accessible to the current user
-		if val, ok := n.Metadata[graph.IsInaccessible]; ok {
-			nd.IsInaccessible = val.(bool)
 		}
 
 		// node may have a circuit breaker
