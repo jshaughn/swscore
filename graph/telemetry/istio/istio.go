@@ -100,7 +100,7 @@ func buildNamespaceTrafficMap(namespace string, o graph.TelemetryOptions, client
 	//    always provides the workload namespace, and because destination_service_namespace is provided from the source,
 	//    and for a request originating on a different cluster, will be set to the namespace where the service-entry is
 	//    defined, on the other cluster.
-	groupBy := fmt.Sprintf("source_workload_namespace,source_workload,source_%s,source_%s,destination_service_namespace,destination_service,destination_service_name,destination_workload_namespace,destination_workload,destination_%s,destination_%s,request_protocol,response_code,grpc_response_status,response_flags", appLabel, verLabel, appLabel, verLabel)
+	groupBy := fmt.Sprintf("request_host,source_workload_namespace,source_workload,source_%s,source_%s,destination_service_namespace,destination_service,destination_service_name,destination_workload_namespace,destination_workload,destination_%s,destination_%s,request_protocol,response_code,grpc_response_status,response_flags", appLabel, verLabel, appLabel, verLabel)
 	query := fmt.Sprintf(`sum(rate(%s{reporter="destination",source_workload="unknown",destination_workload_namespace="%s"} [%vs])) by (%s)`,
 		requestsMetric,
 		namespace,
@@ -162,7 +162,7 @@ func buildNamespaceTrafficMap(namespace string, o graph.TelemetryOptions, client
 
 	if !isIstioNamespace {
 		// 1) query for traffic originating from "unknown" (i.e. the internet)
-		tcpGroupBy := fmt.Sprintf("source_workload_namespace,source_workload,source_%s,source_%s,destination_service_namespace,destination_service,destination_service_name,destination_workload_namespace,destination_workload,destination_%s,destination_%s,response_flags", appLabel, verLabel, appLabel, verLabel)
+		tcpGroupBy := fmt.Sprintf("request_host,source_workload_namespace,source_workload,source_%s,source_%s,destination_service_namespace,destination_service,destination_service_name,destination_workload_namespace,destination_workload,destination_%s,destination_%s,response_flags", appLabel, verLabel, appLabel, verLabel)
 		query = fmt.Sprintf(`sum(rate(%s{reporter="destination",source_workload="unknown",destination_workload_namespace="%s"} [%vs])) by (%s)`,
 			tcpMetric,
 			namespace,
@@ -202,7 +202,7 @@ func populateTrafficMap(trafficMap graph.TrafficMap, vector *model.Vector, o gra
 		lSourceApp, sourceAppOk := m[model.LabelName("source_"+appLabel)]
 		lSourceVer, sourceVerOk := m[model.LabelName("source_"+verLabel)]
 		// lReqSvcNs, reqSvcNsOk := m["requested_service_namespace"]
-		// lReqSvc, reqSvcOk := m["requested_service"]
+		lReqSvc, reqSvcOk := m["request_host"]
 		// lReqSvcName, reqSvcNameOk := m["requested_service_name"]
 		lDestSvcNs, destSvcNsOk := m["destination_service_namespace"]
 		lDestSvc, destSvcOk := m["destination_service"]
@@ -226,7 +226,7 @@ func populateTrafficMap(trafficMap graph.TrafficMap, vector *model.Vector, o gra
 		sourceApp := string(lSourceApp)
 		sourceVer := string(lSourceVer)
 		reqSvcNs := string(lDestSvcNs) // string(lReqSvcNs)
-		// reqSvc := string(lDestSvc)         // string(lReqSvc)
+		reqSvc := string(lReqSvc)
 		reqSvcName := string(lDestSvcName) // string(lReqSvcName)
 		destSvc := string(lDestSvc)
 		destWlNs := string(lDestWlNs)
@@ -256,7 +256,8 @@ func populateTrafficMap(trafficMap graph.TrafficMap, vector *model.Vector, o gra
 		}
 		if inject {
 			// insert requested service node if provided
-			if true { // reqSvcNameOk {
+			if reqSvcOk {
+				reqSvcName = strings.Split(reqSvc, ":")[0] // format "host[:port]"
 				sourceNode, sourceFound := addNode(trafficMap, sourceWlNs, "", sourceWlNs, sourceWl, sourceApp, sourceVer, o)
 				requestedNode, requestedFound := addRequestedServiceNode(trafficMap, reqSvcNs, reqSvcName, o)
 				injectedNode, injectedFound := addInjectedServiceNode(trafficMap, destSvcNs, destSvcName, o)
@@ -596,7 +597,7 @@ func buildNodeTrafficMap(namespace string, n graph.Node, o graph.TelemetryOption
 			sourceWorkloadQuery = fmt.Sprintf(`,source_workload_namespace!~"%s"`, excludedIstioRegex)
 		}
 	}
-	groupBy := fmt.Sprintf("source_workload_namespace,source_workload,source_%s,source_%s,destination_service_namespace,destination_service,destination_service_name,destination_workload_namespace,destination_workload,destination_%s,destination_%s,request_protocol,response_code,grpc_response_status,response_flags", appLabel, verLabel, appLabel, verLabel)
+	groupBy := fmt.Sprintf("request_host,source_workload_namespace,source_workload,source_%s,source_%s,destination_service_namespace,destination_service,destination_service_name,destination_workload_namespace,destination_workload,destination_%s,destination_%s,request_protocol,response_code,grpc_response_status,response_flags", appLabel, verLabel, appLabel, verLabel)
 	switch n.NodeType {
 	case graph.NodeTypeWorkload:
 		query = fmt.Sprintf(`sum(rate(%s{reporter="destination"%s,destination_workload_namespace="%s",destination_workload="%s"} [%vs])) by (%s)`,
@@ -747,7 +748,7 @@ func buildNodeTrafficMap(namespace string, n graph.Node, o graph.TelemetryOption
 	if !config.IsIstioNamespace(namespace) {
 		tcpMetric := "istio_tcp_sent_bytes_total"
 
-		tcpGroupBy := fmt.Sprintf("source_workload_namespace,source_workload,source_%s,source_%s,destination_service_namespace,destination_service,destination_service_name,destination_workload_namespace,destination_workload,destination_%s,destination_%s,response_flags", appLabel, verLabel, appLabel, verLabel)
+		tcpGroupBy := fmt.Sprintf("request_host,source_workload_namespace,source_workload,source_%s,source_%s,destination_service_namespace,destination_service,destination_service_name,destination_workload_namespace,destination_workload,destination_%s,destination_%s,response_flags", appLabel, verLabel, appLabel, verLabel)
 		switch n.NodeType {
 		case graph.NodeTypeWorkload:
 			query = fmt.Sprintf(`sum(rate(%s{reporter="source",destination_workload_namespace="%s",destination_workload="%s"} [%vs])) by (%s)`,
