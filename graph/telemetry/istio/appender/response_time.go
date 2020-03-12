@@ -79,7 +79,7 @@ func (a ResponseTimeAppender) appendGraph(trafficMap graph.TrafficMap, namespace
 	// note - Istio is migrating their latency metric from seconds to milliseconds. We need to support both until
 	//        the 'seconds' variant is removed. That is why we have these complex queries with OR logic.
 	// 1) query for responseTime originating from "unknown" (i.e. the internet)
-	groupBy := fmt.Sprintf("le,source_workload_namespace,source_workload,source_%s,source_%s,destination_service_namespace,destination_service_name,destination_workload_namespace,destination_workload,destination_%s,destination_%s,response_code,grpc_response_status", appLabel, verLabel, appLabel, verLabel)
+	groupBy := fmt.Sprintf("le,request_host,source_workload_namespace,source_workload,source_%s,source_%s,destination_service_namespace,destination_service_name,destination_workload_namespace,destination_workload,destination_%s,destination_%s,response_code,grpc_response_status", appLabel, verLabel, appLabel, verLabel)
 	millisQuery := fmt.Sprintf(`histogram_quantile(%.2f, sum(rate(%s{reporter="destination",source_workload="unknown",destination_workload_namespace="%v"}[%vs])) by (%s))`,
 		quantile,
 		"istio_request_duration_milliseconds_bucket",
@@ -192,6 +192,7 @@ func (a ResponseTimeAppender) populateResponseTimeMap(responseTimeMap map[string
 		lSourceWl, sourceWlOk := m["source_workload"]
 		lSourceApp, sourceAppOk := m[model.LabelName("source_"+appLabel)]
 		lSourceVer, sourceVerOk := m[model.LabelName("source_"+verLabel)]
+		lReqSvc, reqSvcOk := m["request_host"]
 		lDestSvcNs, destSvcNsOk := m["destination_service_namespace"]
 		lDestSvcName, destSvcNameOk := m["destination_service_name"]
 		lDestWlNs, destWlNsOk := m["destination_workload_namespace"]
@@ -210,6 +211,10 @@ func (a ResponseTimeAppender) populateResponseTimeMap(responseTimeMap map[string
 		sourceWl := string(lSourceWl)
 		sourceApp := string(lSourceApp)
 		sourceVer := string(lSourceVer)
+		reqSvc := ""
+		if reqSvcOk {
+			reqSvc = string(lReqSvc)
+		}
 		destSvcNs := string(lDestSvcNs)
 		destSvcName := string(lDestSvcName)
 		destWlNs := string(lDestWlNs)
@@ -244,18 +249,23 @@ func (a ResponseTimeAppender) populateResponseTimeMap(responseTimeMap map[string
 			_, destNodeType := graph.NodeID(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, a.GraphType)
 			inject = (graph.NodeTypeService != destNodeType)
 		}
+		// we set response time only on the edge leading to the destination workload, we can't validly aggregate response
+		// times for the "logical" edges leading to requested service or injected (destination) service nodes.
+		sourceID, _ := graph.NodeID(sourceWlNs, "", sourceWlNs, sourceWl, sourceApp, sourceVer, a.GraphType)
+		destID, _ := graph.NodeID(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, a.GraphType)
 		if inject {
-			// Do not set response time on the incoming edge, we can't validly aggregate response times of the outgoing edges (kiali-2297)
-			a.addResponseTime(responseTimeMap, val, destSvcNs, destSvcName, "", "", "", destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer)
+			sourceID, _ = graph.InjectedServiceNodeID(destSvcNs, destSvcName, a.GraphType)
 		} else {
-			a.addResponseTime(responseTimeMap, val, sourceWlNs, "", sourceWl, sourceApp, sourceVer, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer)
+			if reqSvcOk {
+				reqSvcName := strings.Split(reqSvc, ":")[0] // format "host[:port]"
+				sourceID, _ = graph.RequestedServiceNodeID(destSvcNs, reqSvcName, a.GraphType)
+			}
 		}
+		a.addResponseTime(responseTimeMap, val, sourceID, destID)
 	}
 }
 
-func (a ResponseTimeAppender) addResponseTime(responseTimeMap map[string]float64, val float64, sourceNs, sourceSvcName, sourceWl, sourceApp, sourceVer, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer string) {
-	sourceID, _ := graph.NodeID(sourceNs, sourceSvcName, sourceNs, sourceWl, sourceApp, sourceVer, a.GraphType)
-	destID, _ := graph.NodeID(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, a.GraphType)
+func (a ResponseTimeAppender) addResponseTime(responseTimeMap map[string]float64, val float64, sourceID, destID string) {
 	key := fmt.Sprintf("%s %s", sourceID, destID)
 
 	responseTimeMap[key] = val

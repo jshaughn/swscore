@@ -226,8 +226,11 @@ func populateTrafficMap(trafficMap graph.TrafficMap, vector *model.Vector, o gra
 		sourceApp := string(lSourceApp)
 		sourceVer := string(lSourceVer)
 		reqSvcNs := string(lDestSvcNs) // string(lReqSvcNs)
-		reqSvc := string(lReqSvc)
-		reqSvcName := string(lDestSvcName) // string(lReqSvcName)
+		reqSvc := ""
+		if reqSvcOk {
+			reqSvc = string(lReqSvc)
+		}
+		// reqSvcName := string(lDestSvcName) // string(lReqSvcName)
 		destSvc := string(lDestSvc)
 		destWlNs := string(lDestWlNs)
 		destWl := string(lDestWl)
@@ -257,50 +260,51 @@ func populateTrafficMap(trafficMap graph.TrafficMap, vector *model.Vector, o gra
 		if inject {
 			// insert requested service node if provided
 			if reqSvcOk {
-				reqSvcName = strings.Split(reqSvc, ":")[0] // format "host[:port]"
+				reqSvcName := strings.Split(reqSvc, ":")[0] // format "host[:port]"
 				sourceNode, sourceFound := addNode(trafficMap, sourceWlNs, "", sourceWlNs, sourceWl, sourceApp, sourceVer, o)
-				requestedNode, requestedFound := addRequestedServiceNode(trafficMap, reqSvcNs, reqSvcName, o)
-				injectedNode, injectedFound := addInjectedServiceNode(trafficMap, destSvcNs, destSvcName, o)
+				requestedNode, _ := addRequestedServiceNode(trafficMap, reqSvcNs, reqSvcName, o)
+				injectedNode, _ := addInjectedServiceNode(trafficMap, destSvcNs, destSvcName, o)
 				destNode, destFound := addNode(trafficMap, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o)
 
 				// source -> requested service
-				addTraffic(trafficMap, val, protocol, code, flags, host, sourceNode, sourceFound, requestedNode, requestedFound, o)
+				addTraffic(trafficMap, val, protocol, code, flags, host, sourceNode, requestedNode, o)
 				handleMisconfiguredLabels(sourceNode, sourceFound, sourceApp, sourceVer, val, o)
 
 				// requested service -> injected (dest) service
-				addTraffic(trafficMap, val, protocol, code, flags, host, requestedNode, requestedFound, injectedNode, injectedFound, o)
+				addTraffic(trafficMap, val, protocol, code, flags, host, requestedNode, injectedNode, o)
 
 				// injected (dest) service -> dest
-				addTraffic(trafficMap, val, protocol, code, flags, host, injectedNode, injectedFound, destNode, destFound, o)
+				addTraffic(trafficMap, val, protocol, code, flags, host, injectedNode, destNode, o)
 				addToDestServices(destNode.Metadata, destSvcNs, destSvcName)
 				handleMisconfiguredLabels(destNode, destFound, destApp, destVer, val, o)
 			} else {
 				sourceNode, sourceFound := addNode(trafficMap, sourceWlNs, "", sourceWlNs, sourceWl, sourceApp, sourceVer, o)
-				injectedNode, injectedFound := addInjectedServiceNode(trafficMap, destSvcNs, destSvcName, o)
+				injectedNode, _ := addInjectedServiceNode(trafficMap, destSvcNs, destSvcName, o)
 				destNode, destFound := addNode(trafficMap, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o)
 
 				// source -> injected (dest) service
-				addTraffic(trafficMap, val, protocol, code, flags, host, sourceNode, sourceFound, injectedNode, injectedFound, o)
+				addTraffic(trafficMap, val, protocol, code, flags, host, sourceNode, injectedNode, o)
 				handleMisconfiguredLabels(sourceNode, sourceFound, sourceApp, sourceVer, val, o)
 
 				// injected (dest) service -> dest
-				addTraffic(trafficMap, val, protocol, code, flags, host, injectedNode, injectedFound, destNode, destFound, o)
+				addTraffic(trafficMap, val, protocol, code, flags, host, injectedNode, destNode, o)
 				addToDestServices(destNode.Metadata, destSvcNs, destSvcName)
 				handleMisconfiguredLabels(destNode, destFound, destApp, destVer, val, o)
 			}
 		} else {
 			// if provided insert the request service node
-			if true { // reqSvcNameOk {
+			if reqSvcOk {
+				reqSvcName := strings.Split(reqSvc, ":")[0] // format "host[:port]"
 				sourceNode, sourceFound := addNode(trafficMap, sourceWlNs, "", sourceWlNs, sourceWl, sourceApp, sourceVer, o)
-				requestedNode, requestedFound := addRequestedServiceNode(trafficMap, reqSvcNs, reqSvcName, o)
+				requestedNode, _ := addRequestedServiceNode(trafficMap, reqSvcNs, reqSvcName, o)
 				destNode, destFound := addNode(trafficMap, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o)
 
 				// source -> requested service
-				addTraffic(trafficMap, val, protocol, code, flags, host, sourceNode, sourceFound, requestedNode, requestedFound, o)
+				addTraffic(trafficMap, val, protocol, code, flags, host, sourceNode, requestedNode, o)
 				handleMisconfiguredLabels(sourceNode, sourceFound, sourceApp, sourceVer, val, o)
 
 				// requested service -> dest
-				addTraffic(trafficMap, val, protocol, code, flags, host, requestedNode, requestedFound, destNode, destFound, o)
+				addTraffic(trafficMap, val, protocol, code, flags, host, requestedNode, destNode, o)
 				addToDestServices(destNode.Metadata, destSvcNs, destSvcName)
 				handleMisconfiguredLabels(destNode, destFound, destApp, destVer, val, o)
 			} else {
@@ -308,7 +312,7 @@ func populateTrafficMap(trafficMap graph.TrafficMap, vector *model.Vector, o gra
 				destNode, destFound := addNode(trafficMap, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o)
 
 				// source -> dest
-				addTraffic(trafficMap, val, protocol, code, flags, host, sourceNode, sourceFound, destNode, destFound, o)
+				addTraffic(trafficMap, val, protocol, code, flags, host, sourceNode, destNode, o)
 				addToDestServices(destNode.Metadata, destSvcNs, destSvcName)
 				handleMisconfiguredLabels(sourceNode, sourceFound, sourceApp, sourceVer, val, o)
 				handleMisconfiguredLabels(destNode, destFound, destApp, destVer, val, o)
@@ -317,7 +321,7 @@ func populateTrafficMap(trafficMap graph.TrafficMap, vector *model.Vector, o gra
 	}
 }
 
-func addTraffic(trafficMap graph.TrafficMap, val float64, protocol, code, flags, host string, source *graph.Node, sourceFound bool, dest *graph.Node, destFound bool, o graph.TelemetryOptions) {
+func addTraffic(trafficMap graph.TrafficMap, val float64, protocol, code, flags, host string, source, dest *graph.Node, o graph.TelemetryOptions) {
 
 	var edge *graph.Edge
 	for _, e := range source.Edges {
@@ -342,7 +346,7 @@ func populateTrafficMapTCP(trafficMap graph.TrafficMap, vector *model.Vector, o 
 		lSourceApp, sourceAppOk := m[model.LabelName("source_"+appLabel)]
 		lSourceVer, sourceVerOk := m[model.LabelName("source_"+verLabel)]
 		// lReqSvcNs, reqSvcNsOk := m["requested_service_namespace"]
-		// lReqSvc, reqSvcOk := m["requested_service"]
+		lReqSvc, reqSvcOk := m["request_host"]
 		// lReqSvcName, reqSvcNameOk := m["requested_service_name"]
 		lDestSvcNs, destSvcNsOk := m["destination_service_namespace"]
 		lDestSvc, destSvcOk := m["destination_service"]
@@ -363,8 +367,11 @@ func populateTrafficMapTCP(trafficMap graph.TrafficMap, vector *model.Vector, o 
 		sourceApp := string(lSourceApp)
 		sourceVer := string(lSourceVer)
 		reqSvcNs := string(lDestSvcNs) // string(lReqSvcNs)
-		// reqSvc := string(lDestSvc)         // string(lReqSvc)
-		reqSvcName := string(lDestSvcName) // string(lReqSvcName)
+		reqSvc := ""
+		if reqSvcOk {
+			reqSvc = string(lReqSvc)
+		}
+		// reqSvcName := string(lDestSvcName) // string(lReqSvcName)
 		destSvc := string(lDestSvc)
 		destWlNs := string(lDestWlNs)
 		destWl := string(lDestWl)
@@ -387,50 +394,52 @@ func populateTrafficMapTCP(trafficMap graph.TrafficMap, vector *model.Vector, o 
 		}
 		if inject {
 			// insert requested service node if provided
-			if true { // reqSvcNameOk {
+			if reqSvcOk {
+				reqSvcName := strings.Split(reqSvc, ":")[0] // format "host[:port]"
 				sourceNode, sourceFound := addNode(trafficMap, sourceWlNs, "", sourceWlNs, sourceWl, sourceApp, sourceVer, o)
-				requestedNode, requestedFound := addRequestedServiceNode(trafficMap, reqSvcNs, reqSvcName, o)
-				injectedNode, injectedFound := addInjectedServiceNode(trafficMap, destSvcNs, destSvcName, o)
+				requestedNode, _ := addRequestedServiceNode(trafficMap, reqSvcNs, reqSvcName, o)
+				injectedNode, _ := addInjectedServiceNode(trafficMap, destSvcNs, destSvcName, o)
 				destNode, destFound := addNode(trafficMap, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o)
 
 				// source -> requested service
-				addTCPTraffic(trafficMap, val, flags, host, sourceNode, sourceFound, requestedNode, requestedFound, o)
+				addTCPTraffic(trafficMap, val, flags, host, sourceNode, requestedNode, o)
 				handleMisconfiguredLabels(sourceNode, sourceFound, sourceApp, sourceVer, val, o)
 
 				// requested service -> injected (dest) service
-				addTCPTraffic(trafficMap, val, flags, host, requestedNode, requestedFound, injectedNode, injectedFound, o)
+				addTCPTraffic(trafficMap, val, flags, host, requestedNode, injectedNode, o)
 
 				// injected (dest) service -> dest
-				addTCPTraffic(trafficMap, val, flags, host, injectedNode, injectedFound, destNode, destFound, o)
+				addTCPTraffic(trafficMap, val, flags, host, injectedNode, destNode, o)
 				addToDestServices(destNode.Metadata, destSvcNs, destSvcName)
 				handleMisconfiguredLabels(destNode, destFound, destApp, destVer, val, o)
 			} else {
 				sourceNode, sourceFound := addNode(trafficMap, sourceWlNs, "", sourceWlNs, sourceWl, sourceApp, sourceVer, o)
-				injectedNode, injectedFound := addInjectedServiceNode(trafficMap, destSvcNs, destSvcName, o)
+				injectedNode, _ := addInjectedServiceNode(trafficMap, destSvcNs, destSvcName, o)
 				destNode, destFound := addNode(trafficMap, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o)
 
 				// source -> injected (dest) service
-				addTCPTraffic(trafficMap, val, flags, host, sourceNode, sourceFound, injectedNode, injectedFound, o)
+				addTCPTraffic(trafficMap, val, flags, host, sourceNode, injectedNode, o)
 				handleMisconfiguredLabels(sourceNode, sourceFound, sourceApp, sourceVer, val, o)
 
 				// injected (dest) service -> dest
-				addTCPTraffic(trafficMap, val, flags, host, injectedNode, injectedFound, destNode, destFound, o)
+				addTCPTraffic(trafficMap, val, flags, host, injectedNode, destNode, o)
 				addToDestServices(destNode.Metadata, destSvcNs, destSvcName)
 				handleMisconfiguredLabels(destNode, destFound, destApp, destVer, val, o)
 			}
 		} else {
 			// if provided insert the request service node
-			if true { // reqSvcNameOk {
+			if reqSvcOk {
+				reqSvcName := strings.Split(reqSvc, ":")[0] // format "host[:port]"
 				sourceNode, sourceFound := addNode(trafficMap, sourceWlNs, "", sourceWlNs, sourceWl, sourceApp, sourceVer, o)
-				requestedNode, requestedFound := addRequestedServiceNode(trafficMap, reqSvcNs, reqSvcName, o)
+				requestedNode, _ := addRequestedServiceNode(trafficMap, reqSvcNs, reqSvcName, o)
 				destNode, destFound := addNode(trafficMap, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o)
 
 				// source -> requested service
-				addTCPTraffic(trafficMap, val, flags, host, sourceNode, sourceFound, requestedNode, requestedFound, o)
+				addTCPTraffic(trafficMap, val, flags, host, sourceNode, requestedNode, o)
 				handleMisconfiguredLabels(sourceNode, sourceFound, sourceApp, sourceVer, val, o)
 
 				// requested service -> dest
-				addTCPTraffic(trafficMap, val, flags, host, requestedNode, requestedFound, destNode, destFound, o)
+				addTCPTraffic(trafficMap, val, flags, host, requestedNode, destNode, o)
 				addToDestServices(destNode.Metadata, destSvcNs, destSvcName)
 				handleMisconfiguredLabels(destNode, destFound, destApp, destVer, val, o)
 			} else {
@@ -438,7 +447,7 @@ func populateTrafficMapTCP(trafficMap graph.TrafficMap, vector *model.Vector, o 
 				destNode, destFound := addNode(trafficMap, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o)
 
 				// source -> dest
-				addTCPTraffic(trafficMap, val, flags, host, sourceNode, sourceFound, destNode, destFound, o)
+				addTCPTraffic(trafficMap, val, flags, host, sourceNode, destNode, o)
 				addToDestServices(destNode.Metadata, destSvcNs, destSvcName)
 				handleMisconfiguredLabels(sourceNode, sourceFound, sourceApp, sourceVer, val, o)
 				handleMisconfiguredLabels(destNode, destFound, destApp, destVer, val, o)
@@ -447,7 +456,7 @@ func populateTrafficMapTCP(trafficMap graph.TrafficMap, vector *model.Vector, o 
 	}
 }
 
-func addTCPTraffic(trafficMap graph.TrafficMap, val float64, flags, host string, source *graph.Node, sourceFound bool, dest *graph.Node, destFound bool, o graph.TelemetryOptions) {
+func addTCPTraffic(trafficMap graph.TrafficMap, val float64, flags, host string, source, dest *graph.Node, o graph.TelemetryOptions) {
 	var edge *graph.Edge
 	for _, e := range source.Edges {
 		if dest.ID == e.Dest.ID && e.Metadata[graph.ProtocolKey] == "tcp" {
