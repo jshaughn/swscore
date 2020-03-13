@@ -57,7 +57,7 @@ func (a SecurityPolicyAppender) appendGraph(trafficMap graph.TrafficMap, namespa
 	// 1) query for requests originating from a workload outside the namespace. This may include unnecessary istio
 	//    but we don't want to miss ingressgateway traffic, even if it's not in a requested namespace.  The excess
 	//    traffic will be ignored because it won't map to the trafficMap.
-	groupBy := fmt.Sprintf("source_workload_namespace,source_workload,source_%s,source_%s,destination_service_namespace,destination_service_name,destination_workload_namespace,destination_workload,destination_%s,destination_%s,connection_security_policy", appLabel, verLabel, appLabel, verLabel)
+	groupBy := fmt.Sprintf("request_host,source_workload_namespace,source_workload,source_%s,source_%s,destination_service_namespace,destination_service_name,destination_workload_namespace,destination_workload,destination_%s,destination_%s,connection_security_policy", appLabel, verLabel, appLabel, verLabel)
 	httpQuery := fmt.Sprintf(`sum(rate(%s{reporter="destination",source_workload_namespace!="%v",destination_service_namespace="%v"}[%vs])) by (%s) > 0`,
 		"istio_requests_total",
 		namespace,
@@ -111,6 +111,7 @@ func (a SecurityPolicyAppender) populateSecurityPolicyMap(securityPolicyMap map[
 		lSourceWl, sourceWlOk := m["source_workload"]
 		lSourceApp, sourceAppOk := m[model.LabelName("source_"+appLabel)]
 		lSourceVer, sourceVerOk := m[model.LabelName("source_"+verLabel)]
+		lReqSvc, reqSvcOk := m["request_host"]
 		lDestSvcNs, destSvcNsOk := m["destination_service_namespace"]
 		lDestSvcName, destSvcNameOk := m["destination_service_name"]
 		lDestWlNs, destWlNsOk := m["destination_workload_namespace"]
@@ -128,6 +129,10 @@ func (a SecurityPolicyAppender) populateSecurityPolicyMap(securityPolicyMap map[
 		sourceWl := string(lSourceWl)
 		sourceApp := string(lSourceApp)
 		sourceVer := string(lSourceVer)
+		reqSvc := ""
+		if reqSvcOk {
+			reqSvc = string(lReqSvc)
+		}
 		destSvcNs := string(lDestSvcNs)
 		destSvcName := string(lDestSvcName)
 		destWlNs := string(lDestWlNs)
@@ -144,19 +149,24 @@ func (a SecurityPolicyAppender) populateSecurityPolicyMap(securityPolicyMap map[
 			_, destNodeType := graph.NodeID(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, a.GraphType)
 			inject = (graph.NodeTypeService != destNodeType)
 		}
+		// we set security policy only on the edge leading to the destination workload, we can't validly aggregate security
+		// policies for the "logical" edges leading to requested service or injected (destination) service nodes.
+		sourceID, _ := graph.NodeID(sourceWlNs, "", sourceWlNs, sourceWl, sourceApp, sourceVer, a.GraphType)
+		destID, _ := graph.NodeID(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, a.GraphType)
 		if inject {
-			a.addSecurityPolicy(securityPolicyMap, csp, val, sourceWlNs, "", sourceWl, sourceApp, sourceVer, destSvcNs, destSvcName, "", "", "", "")
-			a.addSecurityPolicy(securityPolicyMap, csp, val, destSvcNs, destSvcName, "", "", "", destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer)
+			sourceID, _ = graph.InjectedServiceNodeID(destSvcNs, destSvcName, a.GraphType)
 		} else {
-			a.addSecurityPolicy(securityPolicyMap, csp, val, sourceWlNs, "", sourceWl, sourceApp, sourceVer, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer)
+			if reqSvcOk {
+				reqSvcName := strings.Split(reqSvc, ":")[0] // format "host[:port]"
+				sourceID, _ = graph.RequestedServiceNodeID(destSvcNs, reqSvcName, a.GraphType)
+			}
 		}
+		a.addSecurityPolicy(securityPolicyMap, csp, val, sourceID, destID)
 	}
 }
 
-func (a SecurityPolicyAppender) addSecurityPolicy(securityPolicyMap map[string]PolicyRates, csp string, val float64, sourceNs, sourceSvcName, sourceWl, sourceApp, sourceVer, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer string) {
-	sourceId, _ := graph.NodeID(sourceNs, sourceSvcName, sourceNs, sourceWl, sourceApp, sourceVer, a.GraphType)
-	destId, _ := graph.NodeID(destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, a.GraphType)
-	key := fmt.Sprintf("%s %s", sourceId, destId)
+func (a SecurityPolicyAppender) addSecurityPolicy(securityPolicyMap map[string]PolicyRates, csp string, val float64, sourceID, destID string) {
+	key := fmt.Sprintf("%s %s", sourceID, destID)
 	var policyRates PolicyRates
 	var ok bool
 	if policyRates, ok = securityPolicyMap[key]; !ok {
