@@ -156,16 +156,16 @@ echo "Bookstore Demo should be installed and starting up - here are the pods:"
 for i in ${NAMESPACES}; do $CLIENT_EXE get pods -n ${i}; done
 
 # If OpenShift, we need to do some additional things
-if [[ "$CLIENT_EXE" = *"oc" ]]; then
+#if [[ "$CLIENT_EXE" = *"oc" ]]; then
 #  $CLIENT_EXE expose svc/productpage -n ${NAMESPACE}
 #  $CLIENT_EXE expose svc/istio-ingressgateway --port http2 -n ${OSM_NAMESPACE}
-  for i in ${NAMESPACES}; do
-    cat <<NAD | $CLIENT_EXE -n ${i} create -f -
-apiVersion: "k8s.cni.cncf.io/v1"
-kind: NetworkAttachmentDefinition
-metadata:
-  name: ${i}-cni
-NAD
-  done
-fi
+#  for i in ${NAMESPACES}; do
+#    cat <<NAD | $CLIENT_EXE -n ${i} create -f -
+#apiVersion: "k8s.cni.cncf.io/v1"
+#kind: NetworkAttachmentDefinition
+#metadata:
+#  name: ${i}-cni
+#NAD
+#  done
+#fi
 
