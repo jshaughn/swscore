@@ -7,11 +7,27 @@ import (
 
 	"github.com/kiali/kiali/config"
 	"github.com/kiali/kiali/graph"
+	"github.com/prometheus/common/model"
 )
 
 // badServiceMatcher looks for a physical IP address with optional port (e.g. 10.11.12.13:80)
 var badServiceMatcher = regexp.MustCompile(`^\d+\.\d+\.\d+\.\d+(:\d+)?$`)
 var egressHost string
+
+// HandleClusters just sets source an dest cluster to unknown if it is not supplied on the telemetry
+func HandleClusters(lSourceCluster model.LabelValue, sourceClusterOk bool, lDestCluster model.LabelValue, destClusterOk bool) (sourceCluster, destCluster string) {
+	if sourceClusterOk {
+		sourceCluster = string(lSourceCluster)
+	} else {
+		sourceCluster = graph.Unknown
+	}
+	if destClusterOk {
+		destCluster = string(lSourceCluster)
+	} else {
+		destCluster = graph.Unknown
+	}
+	return sourceCluster, destCluster
+}
 
 // HandleDestination modifies the destination information, when necessary, for various corner
 // cases.  It should be called after source validation and before destination processing.

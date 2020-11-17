@@ -47,6 +47,7 @@ type NodeOptions struct {
 	Aggregate      string
 	AggregateValue string
 	App            string
+	Cluster        string
 	Namespace      string
 	Service        string
 	Version        string
