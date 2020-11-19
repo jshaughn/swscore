@@ -6,13 +6,14 @@
     "nodes": [
       {
         "data": {
-          "id": "a370e27025c1fea6e29444f6984e23c4",
+          "id": "c2fbd34235fb33d25809469e43f19344",
           "nodeType": "service",
+          "cluster": "cluster-bookinfo",
           "namespace": "bookinfo",
           "service": "app.example.com",
           "destServices": [
             {
-              "cluster": "",
+              "cluster": "cluster-bookinfo",
               "namespace": "bookinfo",
               "name": "app.example.com"
             }
@@ -29,15 +30,16 @@
       },
       {
         "data": {
-          "id": "354af352ce8b5c4103bc86828039622d",
+          "id": "d4f8c4953121af1b02155b494ebb6063",
           "nodeType": "app",
+          "cluster": "cluster-bookinfo",
           "namespace": "bookinfo",
           "workload": "productpage-v1",
           "app": "productpage",
           "version": "v1",
           "destServices": [
             {
-              "cluster": "",
+              "cluster": "cluster-bookinfo",
               "namespace": "bookinfo",
               "name": "productpage"
             }
@@ -54,8 +56,10 @@
       },
       {
         "data": {
-          "id": "2b8c0b20b3d123cfd18420b39505349e",
+          "id": "ddedb716cef6d38da883fcb5ca8797e9",
+          "parent": "fa75195fe2333d2362fce7f62eaeac7e",
           "nodeType": "app",
+          "cluster": "cluster-cp",
           "namespace": "istio-system",
           "workload": "istio-egressgateway",
           "app": "istio-egressgateway",
@@ -67,20 +71,22 @@
                 "httpOut": "400.00"
               }
             }
-          ]
+          ],
+          "isRoot": true
         }
       },
       {
         "data": {
-          "id": "6b246b3a246b873bb6f4f76871897c48",
+          "id": "11de61605e36ab80a0b85d03f8d48a48",
           "nodeType": "app",
+          "cluster": "cluster-tutorial",
           "namespace": "tutorial",
           "workload": "customer-v1",
           "app": "customer",
           "version": "v1",
           "destServices": [
             {
-              "cluster": "",
+              "cluster": "cluster-tutorial",
               "namespace": "tutorial",
               "name": "customer"
             }
@@ -104,13 +110,59 @@
       },
       {
         "data": {
+          "id": "fa75195fe2333d2362fce7f62eaeac7e",
+          "nodeType": "app",
+          "cluster": "unknown",
+          "namespace": "istio-system",
+          "app": "istio-egressgateway",
+          "isGroup": "app"
+        }
+      },
+      {
+        "data": {
+          "id": "2b8c0b20b3d123cfd18420b39505349e",
+          "parent": "fa75195fe2333d2362fce7f62eaeac7e",
+          "nodeType": "app",
+          "cluster": "unknown",
+          "namespace": "istio-system",
+          "workload": "istio-egressgateway",
+          "app": "istio-egressgateway",
+          "version": "latest",
+          "destServices": [
+            {
+              "cluster": "unknown",
+              "namespace": "istio-system",
+              "name": "istio-egressgateway"
+            }
+          ],
+          "traffic": [
+            {
+              "protocol": "grpc",
+              "rates": {
+                "grpcIn": "600.00",
+                "grpcInNoResponse": "600.00"
+              }
+            },
+            {
+              "protocol": "http",
+              "rates": {
+                "httpIn": "900.00",
+                "httpInNoResponse": "500.00"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "data": {
           "id": "7f92c6688ae60c2f8095fff466a1a7fa",
           "nodeType": "service",
+          "cluster": "unknown",
           "namespace": "unknown",
           "service": "app.example-2.com",
           "destServices": [
             {
-              "cluster": "",
+              "cluster": "unknown",
               "namespace": "unknown",
               "name": "app.example-2.com"
             }
@@ -130,6 +182,7 @@
         "data": {
           "id": "375ab940b56ae7bcf0f89cb1a7af5d44",
           "nodeType": "unknown",
+          "cluster": "unknown",
           "namespace": "unknown",
           "workload": "unknown",
           "app": "unknown",
@@ -156,80 +209,8 @@
     "edges": [
       {
         "data": {
-          "id": "73e063577dab29a69d0d132b60d617c2",
-          "source": "2b8c0b20b3d123cfd18420b39505349e",
-          "target": "7f92c6688ae60c2f8095fff466a1a7fa",
-          "traffic": {
-            "protocol": "http",
-            "rates": {
-              "http": "400.00",
-              "httpPercentReq": "100.0"
-            },
-            "responses": {
-              "200": {
-                "flags": {
-                  "-": "100.0"
-                },
-                "hosts": {
-                  "app.example-2.com": "100.0"
-                }
-              }
-            }
-          }
-        }
-      },
-      {
-        "data": {
-          "id": "fa70dcf5a35f2316ebcf120980a07b82",
-          "source": "375ab940b56ae7bcf0f89cb1a7af5d44",
-          "target": "354af352ce8b5c4103bc86828039622d",
-          "traffic": {
-            "protocol": "http",
-            "rates": {
-              "http": "50.00",
-              "httpPercentReq": "100.0"
-            },
-            "responses": {
-              "200": {
-                "flags": {
-                  "-": "100.0"
-                },
-                "hosts": {
-                  "productpage:9080": "100.0"
-                }
-              }
-            }
-          }
-        }
-      },
-      {
-        "data": {
-          "id": "b34ebe734dc4a8fd0f9ec0c19c207981",
-          "source": "375ab940b56ae7bcf0f89cb1a7af5d44",
-          "target": "6b246b3a246b873bb6f4f76871897c48",
-          "traffic": {
-            "protocol": "grpc",
-            "rates": {
-              "grpc": "50.00",
-              "grpcPercentReq": "100.0"
-            },
-            "responses": {
-              "0": {
-                "flags": {
-                  "-": "100.0"
-                },
-                "hosts": {
-                  "customer:9080": "100.0"
-                }
-              }
-            }
-          }
-        }
-      },
-      {
-        "data": {
-          "id": "9741fb82b090f9fd4cca60ce5440b4f0",
-          "source": "6b246b3a246b873bb6f4f76871897c48",
+          "id": "77899caeb6bf5939c31a1966cdf977f7",
+          "source": "11de61605e36ab80a0b85d03f8d48a48",
           "target": "2b8c0b20b3d123cfd18420b39505349e",
           "traffic": {
             "protocol": "http",
@@ -262,8 +243,8 @@
       },
       {
         "data": {
-          "id": "a9ed1b5a8e96a41eb26c15eba51533f3",
-          "source": "6b246b3a246b873bb6f4f76871897c48",
+          "id": "21376d8a16db38773a4f5c4f08b50f06",
+          "source": "11de61605e36ab80a0b85d03f8d48a48",
           "target": "2b8c0b20b3d123cfd18420b39505349e",
           "traffic": {
             "protocol": "grpc",
@@ -288,9 +269,33 @@
       },
       {
         "data": {
-          "id": "918b98488f22bb43f50783bc93843bbc",
-          "source": "6b246b3a246b873bb6f4f76871897c48",
-          "target": "354af352ce8b5c4103bc86828039622d",
+          "id": "94e90d3a3a2fa9f92042e6c4bac9a584",
+          "source": "11de61605e36ab80a0b85d03f8d48a48",
+          "target": "c2fbd34235fb33d25809469e43f19344",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "300.00",
+              "httpPercentReq": "24.0"
+            },
+            "responses": {
+              "200": {
+                "flags": {
+                  "-": "100.0"
+                },
+                "hosts": {
+                  "app.example.com": "100.0"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "0d2c42e0ce8e8657642ea70e2d9f2e4d",
+          "source": "11de61605e36ab80a0b85d03f8d48a48",
+          "target": "d4f8c4953121af1b02155b494ebb6063",
           "traffic": {
             "protocol": "http",
             "rates": {
@@ -312,14 +317,38 @@
       },
       {
         "data": {
-          "id": "75dc6bb4bf2b2202f5d9ed0b542110e4",
-          "source": "6b246b3a246b873bb6f4f76871897c48",
-          "target": "a370e27025c1fea6e29444f6984e23c4",
+          "id": "7538d228a4a583d292019bfc8c4ce6d6",
+          "source": "375ab940b56ae7bcf0f89cb1a7af5d44",
+          "target": "11de61605e36ab80a0b85d03f8d48a48",
+          "traffic": {
+            "protocol": "grpc",
+            "rates": {
+              "grpc": "50.00",
+              "grpcPercentReq": "100.0"
+            },
+            "responses": {
+              "0": {
+                "flags": {
+                  "-": "100.0"
+                },
+                "hosts": {
+                  "customer:9080": "100.0"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "a7a647415970806452ba65adfe29f7e0",
+          "source": "375ab940b56ae7bcf0f89cb1a7af5d44",
+          "target": "d4f8c4953121af1b02155b494ebb6063",
           "traffic": {
             "protocol": "http",
             "rates": {
-              "http": "300.00",
-              "httpPercentReq": "24.0"
+              "http": "50.00",
+              "httpPercentReq": "100.0"
             },
             "responses": {
               "200": {
@@ -327,7 +356,31 @@
                   "-": "100.0"
                 },
                 "hosts": {
-                  "app.example.com": "100.0"
+                  "productpage:9080": "100.0"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "4fc5a84e4417d16fe352d3b5d749dcc4",
+          "source": "ddedb716cef6d38da883fcb5ca8797e9",
+          "target": "7f92c6688ae60c2f8095fff466a1a7fa",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "400.00",
+              "httpPercentReq": "100.0"
+            },
+            "responses": {
+              "200": {
+                "flags": {
+                  "-": "100.0"
+                },
+                "hosts": {
+                  "app.example-2.com": "100.0"
                 }
               }
             }

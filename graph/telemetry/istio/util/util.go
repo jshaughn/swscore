@@ -22,7 +22,7 @@ func HandleClusters(lSourceCluster model.LabelValue, sourceClusterOk bool, lDest
 		sourceCluster = graph.Unknown
 	}
 	if destClusterOk {
-		destCluster = string(lSourceCluster)
+		destCluster = string(lDestCluster)
 	} else {
 		destCluster = graph.Unknown
 	}

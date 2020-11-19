@@ -222,7 +222,7 @@ func addTraffic(trafficMap graph.TrafficMap, val float64, protocol, code, flags,
 	source, sourceFound := addNode(trafficMap, sourceCluster, sourceNs, sourceSvc, sourceNs, sourceWl, sourceApp, sourceVer, o)
 	dest, destFound := addNode(trafficMap, destCluster, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o)
 
-	addToDestServices(dest.Metadata, destSvcNs, destSvcName)
+	addToDestServices(dest.Metadata, destCluster, destSvcNs, destSvcName)
 
 	var edge *graph.Edge
 	for _, e := range source.Edges {
@@ -319,7 +319,7 @@ func addTCPTraffic(trafficMap graph.TrafficMap, val float64, flags, host, source
 	source, sourceFound := addNode(trafficMap, sourceCluster, sourceNs, sourceSvc, sourceNs, sourceWl, sourceApp, sourceVer, o)
 	dest, destFound := addNode(trafficMap, destCluster, destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, o)
 
-	addToDestServices(dest.Metadata, destSvcNs, destSvcName)
+	addToDestServices(dest.Metadata, destCluster, destSvcNs, destSvcName)
 
 	var edge *graph.Edge
 	for _, e := range source.Edges {
@@ -347,7 +347,7 @@ func addTCPTraffic(trafficMap graph.TrafficMap, val float64, flags, host, source
 	return source, dest
 }
 
-func addToDestServices(md graph.Metadata, namespace, service string) {
+func addToDestServices(md graph.Metadata, cluster, namespace, service string) {
 	if !graph.IsOK(service) {
 		return
 	}
@@ -356,7 +356,7 @@ func addToDestServices(md graph.Metadata, namespace, service string) {
 		destServices = graph.NewDestServicesMetadata()
 		md[graph.DestServices] = destServices
 	}
-	destService := graph.ServiceName{Namespace: namespace, Name: service}
+	destService := graph.ServiceName{Cluster: cluster, Namespace: namespace, Name: service}
 	destServices.(graph.DestServicesMetadata)[destService.Key()] = destService
 }
 

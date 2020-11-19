@@ -1696,6 +1696,7 @@ func TestServiceNodeGraph(t *testing.T) {
 }
 
 // TestComplexGraph aims to provide test coverage for a more robust graph and specific corner cases. Listed below are coverage cases
+// - multi-cluster graph
 // - multi-namespace graph
 // - istio namespace
 // - a "shared" node (internal in ns-1, outsider in ns-2)
@@ -1708,10 +1709,12 @@ func TestServiceNodeGraph(t *testing.T) {
 func TestComplexGraph(t *testing.T) {
 	q0 := `round(sum(rate(istio_requests_total{reporter="destination",source_workload="unknown",destination_workload_namespace="bookinfo"} [600s])) by (source_cluster,source_workload_namespace,source_workload,source_canonical_service,source_canonical_revision,destination_cluster,destination_service_namespace,destination_service,destination_service_name,destination_workload_namespace,destination_workload,destination_canonical_service,destination_canonical_revision,request_protocol,response_code,grpc_response_status,response_flags),0.001)`
 	q0m0 := model.Metric{
+		"source_cluster":                 "unknown",
 		"source_workload_namespace":      "unknown",
 		"source_workload":                "unknown",
 		"source_canonical_service":       "unknown",
 		"source_canonical_revision":      "unknown",
+		"destination_cluster":            "cluster-bookinfo",
 		"destination_service_namespace":  "bookinfo",
 		"destination_service":            "productpage:9080",
 		"destination_service_name":       "productpage",
@@ -1745,10 +1748,12 @@ func TestComplexGraph(t *testing.T) {
 
 	q6 := `round(sum(rate(istio_requests_total{reporter="destination",source_workload="unknown",destination_workload_namespace="tutorial"} [600s])) by (source_cluster,source_workload_namespace,source_workload,source_canonical_service,source_canonical_revision,destination_cluster,destination_service_namespace,destination_service,destination_service_name,destination_workload_namespace,destination_workload,destination_canonical_service,destination_canonical_revision,request_protocol,response_code,grpc_response_status,response_flags),0.001)`
 	q6m0 := model.Metric{
+		"source_cluster":                 "unknown",
 		"source_workload_namespace":      "unknown",
 		"source_workload":                "unknown",
 		"source_canonical_service":       "unknown",
 		"source_canonical_revision":      "unknown",
+		"destination_cluster":            "cluster-tutorial",
 		"destination_service_namespace":  "tutorial",
 		"destination_service":            "customer:9080",
 		"destination_service_name":       "customer",
@@ -1761,10 +1766,12 @@ func TestComplexGraph(t *testing.T) {
 		"grpc_response_status":           "0",
 		"response_flags":                 "-"}
 	q6m1 := model.Metric{
+		"source_cluster":                 "unknown",
 		"source_workload_namespace":      "bad-source-temetry",
 		"source_workload":                "unknown",
 		"source_canonical_service":       "unknown",
 		"source_canonical_revision":      "unknown",
+		"destination_cluster":            "cluster-tutorial",
 		"destination_service_namespace":  "tutorial",
 		"destination_service":            "customer:9080",
 		"destination_service_name":       "customer",
@@ -1789,10 +1796,12 @@ func TestComplexGraph(t *testing.T) {
 
 	q8 := `round(sum(rate(istio_requests_total{reporter="source",source_workload_namespace="tutorial"} [600s])) by (source_cluster,source_workload_namespace,source_workload,source_canonical_service,source_canonical_revision,destination_cluster,destination_service_namespace,destination_service,destination_service_name,destination_workload_namespace,destination_workload,destination_canonical_service,destination_canonical_revision,request_protocol,response_code,grpc_response_status,response_flags),0.001)`
 	q8m0 := model.Metric{
+		"source_cluster":                 "cluster-tutorial",
 		"source_workload_namespace":      "tutorial",
 		"source_workload":                "customer-v1",
 		"source_canonical_service":       "customer",
 		"source_canonical_revision":      "v1",
+		"destination_cluster":            "cluster-bookinfo",
 		"destination_service_namespace":  "bookinfo",
 		"destination_service":            "productpage:9080",
 		"destination_service_name":       "productpage",
@@ -1805,10 +1814,12 @@ func TestComplexGraph(t *testing.T) {
 		"grpc_response_status":           "0",
 		"response_flags":                 "-"}
 	q8m1 := model.Metric{ // bad telem (variant 1)
+		"source_cluster":                 "cluster-tutorial",
 		"source_workload_namespace":      "tutorial",
 		"source_workload":                "customer-v1",
 		"source_canonical_service":       "customer",
 		"source_canonical_revision":      "v1",
+		"destination_cluster":            "cluster-bookinfo",
 		"destination_service_namespace":  "bookinfo",
 		"destination_service":            "10.20.30.40:9080",
 		"destination_service_name":       "10.20.30.40:9080",
@@ -1820,10 +1831,12 @@ func TestComplexGraph(t *testing.T) {
 		"response_code":                  "200",
 		"response_flags":                 "-"}
 	q8m2 := model.Metric{ // bad telem (variant 2)
+		"source_cluster":                 "cluster-tutorial",
 		"source_workload_namespace":      "tutorial",
 		"source_workload":                "customer-v1",
 		"source_canonical_service":       "customer",
 		"source_canonical_revision":      "v1",
+		"destination_cluster":            "cluster-bookinfo",
 		"destination_service_namespace":  "bookinfo",
 		"destination_service":            "10.20.30.40",
 		"destination_service_name":       "10.20.30.40",
@@ -1835,10 +1848,12 @@ func TestComplexGraph(t *testing.T) {
 		"response_code":                  "200",
 		"response_flags":                 "-"}
 	q8m3 := model.Metric{ // good telem (mock service entry)
+		"source_cluster":                 "cluster-tutorial",
 		"source_workload_namespace":      "tutorial",
 		"source_workload":                "customer-v1",
 		"source_canonical_service":       "customer",
 		"source_canonical_revision":      "v1",
+		"destination_cluster":            "cluster-bookinfo",
 		"destination_service_namespace":  "bookinfo",
 		"destination_service":            "app.example.com",
 		"destination_service_name":       "app.example.com",
@@ -1850,10 +1865,12 @@ func TestComplexGraph(t *testing.T) {
 		"response_code":                  "200",
 		"response_flags":                 "-"}
 	q8m4 := model.Metric{ // good telem (service entry via egressgateway, see the second hop below)
+		"source_cluster":                 "cluster-tutorial",
 		"source_workload_namespace":      "tutorial",
 		"source_workload":                "customer-v1",
 		"source_canonical_service":       "customer",
 		"source_canonical_revision":      "v1",
+		"destination_cluster":            "unknown",
 		"destination_service_namespace":  "unknown",
 		"destination_service":            "istio-egressgateway.istio-system.svc.cluster.local",
 		"destination_service_name":       "istio-egressgateway.istio-system.svc.cluster.local",
@@ -1865,10 +1882,12 @@ func TestComplexGraph(t *testing.T) {
 		"response_code":                  "200",
 		"response_flags":                 "-"}
 	q8m5 := model.Metric{ // no response http
+		"source_cluster":                 "cluster-tutorial",
 		"source_workload_namespace":      "tutorial",
 		"source_workload":                "customer-v1",
 		"source_canonical_service":       "customer",
 		"source_canonical_revision":      "v1",
+		"destination_cluster":            "unknown",
 		"destination_service_namespace":  "unknown",
 		"destination_service":            "istio-egressgateway.istio-system.svc.cluster.local",
 		"destination_service_name":       "istio-egressgateway.istio-system.svc.cluster.local",
@@ -1880,10 +1899,12 @@ func TestComplexGraph(t *testing.T) {
 		"response_code":                  "0",
 		"response_flags":                 "DC"}
 	q8m6 := model.Metric{ // no response grpc
+		"source_cluster":                 "cluster-tutorial",
 		"source_workload_namespace":      "tutorial",
 		"source_workload":                "customer-v1",
 		"source_canonical_service":       "customer",
 		"source_canonical_revision":      "v1",
+		"destination_cluster":            "unknown",
 		"destination_service_namespace":  "unknown",
 		"destination_service":            "istio-egressgateway.istio-system.svc.cluster.local",
 		"destination_service_name":       "istio-egressgateway.istio-system.svc.cluster.local",
@@ -1934,10 +1955,12 @@ func TestComplexGraph(t *testing.T) {
 
 	q14 := `round(sum(rate(istio_requests_total{reporter="source",source_workload_namespace="istio-system"} [600s])) by (source_cluster,source_workload_namespace,source_workload,source_canonical_service,source_canonical_revision,destination_cluster,destination_service_namespace,destination_service,destination_service_name,destination_workload_namespace,destination_workload,destination_canonical_service,destination_canonical_revision,request_protocol,response_code,grpc_response_status,response_flags),0.001)`
 	q14m0 := model.Metric{ // good telem (service entry via egressgateway, see the second hop below)
+		"source_cluster":                 "cluster-cp",
 		"source_workload_namespace":      "istio-system",
 		"source_workload":                "istio-egressgateway",
 		"source_canonical_service":       "istio-egressgateway",
 		"source_canonical_revision":      "latest",
+		"destination_cluster":            "unknown",
 		"destination_service_namespace":  "unknown",
 		"destination_service":            "app.example-2.com",
 		"destination_service_name":       "app.example-2.com",

@@ -108,6 +108,7 @@ func NewOptions(r *net_http.Request) Options {
 	var injectServiceNodes bool
 	var queryTime int64
 	appenders := RequestedAppenders{All: true}
+	cluster := params.Get("cluster")
 	configVendor := params.Get("configVendor")
 	durationString := params.Get("duration")
 	graphType := params.Get("graphType")
@@ -125,6 +126,9 @@ func NewOptions(r *net_http.Request) Options {
 		appenders = RequestedAppenders{All: false, AppenderNames: appenderNames}
 	}
 
+	if cluster == "" {
+		cluster = Unknown
+	}
 	if configVendor == "" {
 		configVendor = defaultConfigVendor
 	} else if configVendor != VendorCytoscape {
@@ -250,6 +254,7 @@ func NewOptions(r *net_http.Request) Options {
 				Aggregate:      aggregate,
 				AggregateValue: aggregateValue,
 				App:            app,
+				Cluster:        cluster,
 				Namespace:      namespace,
 				Service:        service,
 				Version:        version,

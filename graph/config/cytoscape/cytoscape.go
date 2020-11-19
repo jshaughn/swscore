@@ -55,11 +55,12 @@ type ProtocolTraffic struct {
 
 type NodeData struct {
 	// Cytoscape Fields
-	Id     string `json:"id"`               // unique internal node ID (n0, n1...)
+	ID     string `json:"id"`               // unique internal node ID (n0, n1...)
 	Parent string `json:"parent,omitempty"` // Compound Node parent ID
 
 	// App Fields (not required by Cytoscape)
 	NodeType        string              `json:"nodeType"`
+	Cluster         string              `json:"cluster"`
 	Namespace       string              `json:"namespace"`
 	Workload        string              `json:"workload,omitempty"`
 	App             string              `json:"app,omitempty"`
@@ -83,7 +84,7 @@ type NodeData struct {
 
 type EdgeData struct {
 	// Cytoscape Fields
-	Id     string `json:"id"`     // unique internal edge ID (e0, e1...)
+	ID     string `json:"id"`     // unique internal edge ID (e0, e1...)
 	Source string `json:"source"` // parent node ID
 	Target string `json:"target"` // child node ID
 
@@ -148,6 +149,8 @@ func NewConfig(trafficMap graph.TrafficMap, o graph.ConfigOptions) (result Confi
 	// kiali-1258 compound/isGroup/parent nodes must come before the child references
 	sort.Slice(nodes, func(i, j int) bool {
 		switch {
+		case nodes[i].Data.Cluster != nodes[j].Data.Cluster:
+			return nodes[i].Data.Cluster < nodes[j].Data.Cluster
 		case nodes[i].Data.Namespace != nodes[j].Data.Namespace:
 			return nodes[i].Data.Namespace < nodes[j].Data.Namespace
 		case nodes[i].Data.IsGroup != nodes[j].Data.IsGroup:
@@ -185,11 +188,12 @@ func NewConfig(trafficMap graph.TrafficMap, o graph.ConfigOptions) (result Confi
 
 func buildConfig(trafficMap graph.TrafficMap, nodes *[]*NodeWrapper, edges *[]*EdgeWrapper, o graph.ConfigOptions) {
 	for id, n := range trafficMap {
-		nodeId := nodeHash(id)
+		nodeID := nodeHash(id)
 
 		nd := &NodeData{
-			Id:        nodeId,
+			ID:        nodeID,
 			NodeType:  n.NodeType,
+			Cluster:   n.Cluster,
 			Namespace: n.Namespace,
 			Workload:  n.Workload,
 			App:       n.App,
@@ -269,17 +273,17 @@ func buildConfig(trafficMap graph.TrafficMap, nodes *[]*NodeWrapper, edges *[]*E
 		*nodes = append(*nodes, &nw)
 
 		for _, e := range n.Edges {
-			sourceIdHash := nodeHash(n.ID)
-			destIdHash := nodeHash(e.Dest.ID)
+			sourceIDHash := nodeHash(n.ID)
+			destIDHash := nodeHash(e.Dest.ID)
 			protocol := ""
 			if e.Metadata[graph.ProtocolKey] != nil {
 				protocol = e.Metadata[graph.ProtocolKey].(string)
 			}
-			edgeId := edgeHash(sourceIdHash, destIdHash, protocol)
+			edgeID := edgeHash(sourceIDHash, destIDHash, protocol)
 			ed := EdgeData{
-				Id:     edgeId,
-				Source: sourceIdHash,
-				Target: destIdHash,
+				ID:     edgeID,
+				Source: sourceIDHash,
+				Target: destIDHash,
 				Traffic: ProtocolTraffic{
 					Protocol: protocol,
 				},
@@ -443,10 +447,11 @@ func generateGroupCompoundNodes(appBox map[string][]*NodeData, nodes *[]*NodeWra
 	for k, members := range appBox {
 		if len(members) > 1 {
 			// create the compound (parent) node for the member nodes
-			nodeId := nodeHash(k)
+			nodeID := nodeHash(k)
 			nd := NodeData{
-				Id:        nodeId,
+				ID:        nodeID,
 				NodeType:  graph.NodeTypeApp,
+				Cluster:   members[0].Cluster,
 				Namespace: members[0].Namespace,
 				App:       members[0].App,
 				Version:   "",
@@ -463,7 +468,7 @@ func generateGroupCompoundNodes(appBox map[string][]*NodeData, nodes *[]*NodeWra
 			nd.IsOutside = false
 
 			for _, n := range members {
-				n.Parent = nodeId
+				n.Parent = nodeID
 
 				// copy some member attributes to to the compound node (aka app box)
 				nd.HasMissingSC = nd.HasMissingSC || n.HasMissingSC

@@ -52,6 +52,15 @@ type AppVersionParam struct {
 	Name string `json:"version"`
 }
 
+// swagger:parameters graphAggregate graphAggregateByService graphApp graphAppVersion graphService graphWorkload
+type ClusterParam struct {
+	// The cluster name. If not supplied queries/results will not be constrained by cluster.
+	//
+	// in: query
+	// required: false
+	Name string `json:"container"`
+}
+
 // swagger:parameters podLogs
 type ContainerParam struct {
 	// The pod container name. Optional for single-container pod. Otherwise required.
