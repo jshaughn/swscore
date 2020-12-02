@@ -14,6 +14,7 @@ const (
 	GraphTypeWorkload     string = "workload"
 	NodeTypeAggregate     string = "aggregate" // The special "aggregate" traffic node
 	NodeTypeApp           string = "app"
+	NodeTypeBox           string = "box" // The special "box" node. isBox will be set to "app" | "cluster" | "namespace"
 	NodeTypeService       string = "service"
 	NodeTypeUnknown       string = "unknown" // The special "unknown" traffic gen node
 	NodeTypeWorkload      string = "workload"

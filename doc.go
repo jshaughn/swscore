@@ -207,13 +207,13 @@ type GraphTypeParam struct {
 }
 
 // swagger:parameters graphApp graphAppVersion graphNamespaces graphService graphWorkload
-type GroupByParam struct {
-	// App box grouping characteristic. Available groupings: [app, none, version].
+type BoxByParam struct {
+	// Comma-separated list of desired node boxing. Available boxings: [app, cluster, namespace, none].
 	//
 	// in: query
 	// required: false
 	// default: none
-	Name string `json:"groupBy"`
+	Name string `json:"boxBy"`
 }
 
 // swagger:parameters graphApp graphAppVersion graphNamespaces graphWorkload
