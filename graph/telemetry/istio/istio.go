@@ -181,7 +181,7 @@ func populateTrafficMap(trafficMap graph.TrafficMap, vector *model.Vector, o gra
 		code := string(lCode)
 		flags := string(lFlags)
 
-		if util.IsBadSourceTelemetry(sourceWlNs, sourceWl, sourceApp) {
+		if util.IsBadSourceTelemetry(lSourceCluster, sourceClusterOk, sourceWlNs, sourceWl, sourceApp) {
 			continue
 		}
 
@@ -194,7 +194,7 @@ func populateTrafficMap(trafficMap graph.TrafficMap, vector *model.Vector, o gra
 		// handle unusual destinations
 		destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, _ := util.HandleDestination(sourceWlNs, sourceWl, string(lDestSvcNs), string(lDestSvc), string(lDestSvcName), string(lDestWlNs), string(lDestWl), string(lDestApp), string(lDestVer))
 
-		if util.IsBadDestTelemetry(destSvc, destSvcName, destWl) {
+		if util.IsBadDestTelemetry(lDestCluster, destClusterOk, destSvc, destSvcName, destWl) {
 			continue
 		}
 
@@ -281,7 +281,7 @@ func populateTrafficMapTCP(trafficMap graph.TrafficMap, vector *model.Vector, o 
 		destSvc := string(lDestSvc)
 		flags := string(lFlags)
 
-		if util.IsBadSourceTelemetry(sourceWlNs, sourceWl, sourceApp) {
+		if util.IsBadSourceTelemetry(lSourceCluster, sourceClusterOk, sourceWlNs, sourceWl, sourceApp) {
 			continue
 		}
 
@@ -291,7 +291,7 @@ func populateTrafficMapTCP(trafficMap graph.TrafficMap, vector *model.Vector, o 
 		// handle unusual destinations
 		destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, _ := util.HandleDestination(sourceWlNs, sourceWl, string(lDestSvcNs), string(lDestSvc), string(lDestSvcName), string(lDestWlNs), string(lDestWl), string(lDestApp), string(lDestVer))
 
-		if util.IsBadDestTelemetry(destSvc, destSvcName, destWl) {
+		if util.IsBadDestTelemetry(lDestCluster, destClusterOk, destSvc, destSvcName, destWl) {
 			continue
 		}
 

@@ -137,14 +137,14 @@ func NewConfig(trafficMap graph.TrafficMap, o graph.ConfigOptions) (result Confi
 		boxByApp(&nodes)
 	}
 	if strings.Contains(o.BoxBy, graph.BoxByNamespace) {
-		boxByNamespace(&nodes)
+		// boxByNamespace(&nodes)
 	}
 	if strings.Contains(o.BoxBy, graph.BoxByCluster) {
-		boxByCluster(&nodes)
+		// boxByCluster(&nodes)
 	}
 
-	// boxByNamespace(&nodes)
-	boxByCluster(&nodes)
+	boxByNamespace(&nodes)
+	// boxByCluster(&nodes)
 
 	// sort nodes and edges for better json presentation (and predictable testing)
 	// kiali-1258 parent nodes must come before the child references

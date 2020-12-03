@@ -150,7 +150,7 @@ func (a ResponseTimeAppender) populateResponseTimeMap(responseTimeMap map[string
 		destSvc := string(lDestSvc)
 		responseCode := string(lResponseCode)
 
-		if util.IsBadSourceTelemetry(sourceWlNs, sourceWl, sourceApp) {
+		if util.IsBadSourceTelemetry(lSourceCluster, sourceClusterOk, sourceWlNs, sourceWl, sourceApp) {
 			continue
 		}
 
@@ -174,7 +174,7 @@ func (a ResponseTimeAppender) populateResponseTimeMap(responseTimeMap map[string
 		// handle unusual destinations
 		destSvcNs, destSvcName, destWlNs, destWl, destApp, destVer, _ := util.HandleDestination(sourceWlNs, sourceWl, string(lDestSvcNs), string(lDestSvc), string(lDestSvcName), string(lDestWlNs), string(lDestWl), string(lDestApp), string(lDestVer))
 
-		if util.IsBadDestTelemetry(destSvc, destSvcName, destWl) {
+		if util.IsBadDestTelemetry(lDestCluster, destClusterOk, destSvc, destSvcName, destWl) {
 			continue
 		}
 
